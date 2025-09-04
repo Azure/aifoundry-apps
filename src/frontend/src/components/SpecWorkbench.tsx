@@ -980,15 +980,16 @@ export function SpecWorkbench() {
         
         {/* Show Panel Button - appears when agent panel is collapsed */}
         {!isAgentPanelExpanded && (
-          <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-10">
+          <div className="fixed right-0 top-1/2 transform -translate-y-1/2 z-10">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsAgentPanelExpanded(true)}
-              className="text-figma-text-secondary hover:text-figma-text-primary border-figma-light-gray bg-figma-medium-gray shadow-lg"
+              className="text-figma-text-secondary hover:text-figma-text-primary border-figma-light-gray bg-figma-medium-gray shadow-lg rounded-l-md rounded-r-none border-r-0 px-3 py-6 flex flex-col items-center justify-center writing-mode-vertical"
+              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
             >
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Show Panel
+              <ChevronLeft className="h-4 w-4 mb-1" />
+              <span className="text-xs font-medium">Show Panel</span>
             </Button>
           </div>
         )}
