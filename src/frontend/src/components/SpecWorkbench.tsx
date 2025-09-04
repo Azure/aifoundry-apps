@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Settings, GitBranch, Loader2, Save, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { ArrowLeft, Settings, GitBranch, Loader2, Save, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { toast } from '@/hooks/use-toast'
@@ -504,24 +504,6 @@ export function SpecWorkbench() {
             </div>
             
             <div className="flex items-center space-x-3">
-              <Button 
-                onClick={() => setIsAgentPanelExpanded(!isAgentPanelExpanded)}
-                variant="outline"
-                size="sm"
-                className="border-figma-light-gray text-figma-text-secondary hover:text-figma-text-primary"
-              >
-                {isAgentPanelExpanded ? (
-                  <>
-                    <ChevronRight className="mr-2 h-4 w-4" />
-                    Hide Panel
-                  </>
-                ) : (
-                  <>
-                    <ChevronLeft className="mr-2 h-4 w-4" />
-                    Show Panel
-                  </>
-                )}
-              </Button>
               <Button
                 onClick={saveSpec}
                 disabled={saving}
@@ -931,11 +913,12 @@ export function SpecWorkbench() {
                     </div>
                     <Button 
                       onClick={() => setIsAgentPanelExpanded(false)}
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="text-figma-text-secondary hover:text-figma-text-primary p-1"
+                      className="text-figma-text-secondary hover:text-figma-text-primary border-figma-light-gray"
                     >
-                      <X className="h-4 w-4" />
+                      Hide Panel
+                      <ChevronRight className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
                   <CardDescription className="text-figma-text-secondary">
@@ -994,6 +977,21 @@ export function SpecWorkbench() {
             </div>
           )}
         </div>
+        
+        {/* Show Panel Button - appears when agent panel is collapsed */}
+        {!isAgentPanelExpanded && (
+          <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-10">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAgentPanelExpanded(true)}
+              className="text-figma-text-secondary hover:text-figma-text-primary border-figma-light-gray bg-figma-medium-gray shadow-lg"
+            >
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Show Panel
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
