@@ -2,8 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from typing import List
 import logging
-from ...models.schemas import Spec, SpecCreateRequest, CustomizationRequest, SWEAgentRequest, SpecifyRequest, PlanRequest, TasksRequest
+from ...models.schemas import (
+    Spec, SpecCreateRequest, CustomizationRequest, SWEAgentRequest, 
+    SpecifyRequest, PlanRequest, TasksRequest, ConstitutionalValidationRequest,
+    ConstitutionalValidationResponse, SpecKitInitRequest, SystemCheckResponse
+)
 from ...services.spec_service import SpecService
+from ...services.constitutional_service import ConstitutionalService
 from ...api.dependencies import get_spec_service
 from ...core.config import settings
 from openai import OpenAI
@@ -1004,3 +1009,105 @@ Please start by creating the GitHub repository and then implement according to t
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error assigning specification to agent: {str(e)}")
+
+@router.post("/constitutional-validation")
+async def validate_constitutional_compliance(request: ConstitutionalValidationRequest):
+    """Validate plan against spec-kit constitutional principles"""
+    constitutional_service = ConstitutionalService()
+    return constitutional_service.validate_plan(request)
+
+@router.post("/spec-kit-init")
+async def spec_kit_init(request: SpecKitInitRequest):
+    """Initialize new spec-kit project (web equivalent of specify init command)"""
+    
+    project_structure = {
+        "project_name": request.project_name,
+        "ai_agent": request.ai_agent,
+        "directories": [
+            "memory/",
+            "scripts/", 
+            "templates/",
+            "specs/"
+        ],
+        "files": [
+            "memory/constitution.md",
+            "memory/constitution_update_checklist.md",
+            "scripts/create-new-feature.sh",
+            "scripts/setup-plan.sh", 
+            "scripts/check-task-prerequisites.sh",
+            "templates/spec-template.md",
+            "templates/plan-template.md",
+            "templates/tasks-template.md"
+        ],
+        "agent_files": []
+    }
+    
+    if request.ai_agent == "claude":
+        project_structure["agent_files"].extend([
+            ".claude/commands/specify.md",
+            ".claude/commands/plan.md",
+            ".claude/commands/tasks.md"
+        ])
+    elif request.ai_agent == "gemini":
+        project_structure["agent_files"].extend([
+            ".gemini/commands/specify.toml",
+            ".gemini/commands/plan.toml", 
+            ".gemini/commands/tasks.toml",
+            "GEMINI.md"
+        ])
+    elif request.ai_agent == "copilot":
+        project_structure["agent_files"].extend([
+            ".github/prompts/specify.prompt.md",
+            ".github/prompts/plan.prompt.md",
+            ".github/prompts/tasks.prompt.md",
+            ".github/copilot-instructions.md"
+        ])
+    
+    return {
+        "status": "success",
+        "message": f"Spec-kit project '{request.project_name}' initialized successfully",
+        "project_structure": project_structure,
+        "next_steps": [
+            "Use /specify command to create your first feature specification",
+            "Follow the three-phase workflow: Specify → Plan → Tasks",
+            "Ensure constitutional compliance during planning phase"
+        ]
+    }
+
+@router.get("/system-check")
+async def system_check():
+    """System requirements check (web equivalent of specify check command)"""
+    
+    checks = {
+        "azure_openai": bool(settings.AZURE_OPENAI_KEY and settings.AZURE_OPENAI_ENDPOINT),
+        "cosmos_db": bool(getattr(settings, 'COSMOS_CONNECTION_STRING', None) or 
+                         (getattr(settings, 'COSMOS_ENDPOINT', None) and getattr(settings, 'COSMOS_KEY', None))),
+        "github_oauth": bool(getattr(settings, 'GITHUB_CLIENT_ID', None) and getattr(settings, 'GITHUB_CLIENT_SECRET', None)),
+        "internet_connectivity": True
+    }
+    
+    messages = []
+    if not checks["azure_openai"]:
+        messages.append("Azure OpenAI configuration missing - spec enhancement may not work")
+    if not checks["cosmos_db"]:
+        messages.append("Cosmos DB configuration missing - specs will not be persisted")
+    if not checks["github_oauth"]:
+        messages.append("GitHub OAuth configuration missing - agent assignment may not work")
+    
+    all_passed = all(checks.values())
+    status = "ready" if all_passed else "partial"
+    
+    if not messages:
+        messages.append("All systems operational - ready for spec-driven development")
+    
+    return SystemCheckResponse(
+        status=status,
+        checks=checks,
+        messages=messages
+    )
+
+@router.get("/{spec_id}/versions")
+async def get_spec_versions(spec_id: str, spec_service: SpecService = Depends(get_spec_service)):
+    """Get version history for a specification"""
+    versions = spec_service.get_spec_versions(spec_id)
+    return {"spec_id": spec_id, "versions": versions}

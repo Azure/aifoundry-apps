@@ -85,6 +85,12 @@ class Spec(BaseModel):
     tasks: Optional[List[Dict[str, Any]]] = None  # Actionable implementation tasks
     branch_name: Optional[str] = None  # Git branch for this spec
     feature_number: Optional[str] = None  # Unique feature number
+    version: int = 1
+    constitutional_compliance: Dict[str, Any] = {}
+    # Spec-kit metadata
+    tech_stack: Optional[str] = None
+    architecture: Optional[str] = None
+    constraints: Optional[str] = None
 
 class SpecCreateRequest(BaseModel):
     title: str
@@ -103,3 +109,26 @@ class PlanRequest(BaseModel):
 
 class TasksRequest(BaseModel):
     mode: str = "breakdown"  # breakdown or oneshot
+
+class ConstitutionalValidationRequest(BaseModel):
+    plan: str
+    tech_stack: str
+    architecture: Optional[str] = None
+
+class ConstitutionalValidationResponse(BaseModel):
+    is_compliant: bool
+    violations: List[Dict[str, str]]
+    recommendations: List[str]
+    gates_passed: Dict[str, bool]
+
+class SpecKitInitRequest(BaseModel):
+    project_name: str
+    ai_agent: str = "claude"  # claude, gemini, copilot
+    initialize_here: bool = False
+    skip_agent_tools: bool = False
+    skip_git: bool = False
+
+class SystemCheckResponse(BaseModel):
+    status: str
+    checks: Dict[str, bool]
+    messages: List[str]

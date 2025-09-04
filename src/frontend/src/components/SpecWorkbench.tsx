@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { ArrowLeft, Settings, GitBranch, Loader2, Save, FileText, Wand2, Undo2, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Settings, GitBranch, Loader2, Save, FileText, ChevronDown, ChevronUp, CheckCircle, AlertCircle } from 'lucide-react'
+import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { toast } from '@/hooks/use-toast'
 import { ToastAction } from './ui/toast'
@@ -30,6 +31,16 @@ interface Spec {
   tasks?: TaskBreakdown[]
   branch_name?: string
   feature_number?: string
+  version?: number
+  constitutional_compliance?: {
+    is_compliant: boolean
+    violations: Array<{article: string, violation: string}>
+    recommendations: string[]
+    gates_passed: Record<string, boolean>
+  }
+  tech_stack?: string
+  architecture?: string
+  constraints?: string
 }
 
 interface CustomizationRequest {
@@ -367,7 +378,7 @@ export function SpecWorkbench() {
         setSpecPhase('plan')
         setActiveTab('plan')
         setShowBasicDetails(false)
-        toast({ title: 'Specification Complete', description: result.next_step })
+        toast({ title: '/specify Phase Complete', description: 'Feature specification created following spec-kit methodology.' })
       } else {
         throw new Error('Failed to process specification')
       }
@@ -400,7 +411,7 @@ export function SpecWorkbench() {
         setContent(result.spec.plan)
         setSpecPhase('tasks')
         setActiveTab('tasks')
-        toast({ title: 'Plan Complete', description: result.next_step })
+        toast({ title: '/plan Phase Complete', description: 'Technical plan generated with constitutional validation.' })
       } else {
         throw new Error('Failed to generate plan')
       }
@@ -632,14 +643,48 @@ export function SpecWorkbench() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-figma-text-primary">Spec-Driven Development</CardTitle>
+                    <CardTitle className="text-figma-text-primary">Spec-Kit Workflow</CardTitle>
                     <CardDescription className="text-figma-text-secondary">
-                      Follow the three-phase approach: Specify → Plan → Tasks
+                      Follow the three-phase methodology with constitutional governance
                     </CardDescription>
                   </div>
                   {spec?.branch_name && (
-                    <div className="text-sm text-figma-text-secondary">
-                      Branch: <code className="bg-figma-dark-gray px-2 py-1 rounded">{spec.branch_name}</code>
+                    <div className="flex items-center gap-2 text-sm text-figma-text-secondary">
+                      <GitBranch className="h-4 w-4" />
+                      <span>Feature #{spec.feature_number}: {spec.branch_name}</span>
+                      {spec.version && <span className="text-xs bg-figma-light-gray px-2 py-1 rounded">v{spec.version}</span>}
+                    </div>
+                  )}
+                  
+                  {spec?.constitutional_compliance && (
+                    <div className="mt-3 p-3 rounded-lg bg-figma-light-gray">
+                      <div className="flex items-center gap-2 mb-2">
+                        {spec.constitutional_compliance.is_compliant ? (
+                          <CheckCircle className="h-4 w-4 text-green-400" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-yellow-400" />
+                        )}
+                        <span className={`text-sm font-medium ${spec.constitutional_compliance.is_compliant ? 'text-green-400' : 'text-yellow-400'}`}>
+                          Constitutional Compliance: {spec.constitutional_compliance.is_compliant ? 'PASSED' : 'NEEDS ATTENTION'}
+                        </span>
+                      </div>
+                      
+                      {spec.constitutional_compliance.violations.length > 0 && (
+                        <div className="text-xs text-figma-text-secondary">
+                          <div className="font-medium mb-1">Violations:</div>
+                          {spec.constitutional_compliance.violations.map((violation, idx) => (
+                            <div key={idx} className="ml-2">• {violation.article}: {violation.violation}</div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {Object.entries(spec.constitutional_compliance.gates_passed).map(([gate, passed]) => (
+                          <Badge key={gate} className={`text-xs ${passed ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+                            {gate}: {passed ? '✅' : '❌'}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
