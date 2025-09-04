@@ -94,11 +94,13 @@ export function SpecWorkbench() {
     use_a2a: false
   })
 
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
   const [selectedAgent, setSelectedAgent] = useState<string>('')
   const [apiKey, setApiKey] = useState<string>('')
   const [endpoint, setEndpoint] = useState<string>('')
   const [githubPat, setGithubPat] = useState<string>('')
   const [preferImport, setPreferImport] = useState<boolean>(false)
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false)
 
   const [activeTab, setActiveTab] = useState<'details' | 'specify' | 'plan' | 'tasks'>('details')
 
@@ -106,6 +108,7 @@ export function SpecWorkbench() {
   const [requirements, setRequirements] = useState('')
   const [planContent, setPlanContent] = useState('')
   const [taskBreakdown, setTaskBreakdown] = useState<TaskBreakdown[]>([])
+  const [workflowMode, setWorkflowMode] = useState<'breakdown' | 'oneshot'>('breakdown')
   const [isAssigningTasks, setIsAssigningTasks] = useState(false)
   const [assignmentPhase, setAssignmentPhase] = useState<'idle' | 'starting'>('idle')
   const [assignmentResponses, setAssignmentResponses] = useState<any[]>([])
