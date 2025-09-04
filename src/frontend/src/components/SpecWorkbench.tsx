@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Textarea } from './ui/textarea'
-import { Badge } from './ui/badge'
 import AssignmentResult from './AssignmentResult'
 import { Checkbox } from './ui/checkbox'
 import { SWEAgentSelection } from './SWEAgentSelection'
