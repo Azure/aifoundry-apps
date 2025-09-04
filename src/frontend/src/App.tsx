@@ -134,8 +134,8 @@ function App() {
             } />
             <Route path="/template/:templateId" element={<TemplateWorkbench />} />
             <Route path="/specs" element={<SpecsPage />} />
-            <Route path="/spec/:specId" element={<SpecWorkbench />} />
             <Route path="/spec/new" element={<SpecWorkbench />} />
+            <Route path="/spec/:specId" element={<SpecWorkbench />} />
             <Route path="/auth/github/callback" element={<AuthCallback />} />
             <Route path="/dashboard" element={<UserDashboard />} />
           </Routes>

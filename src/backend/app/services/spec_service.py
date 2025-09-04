@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 from azure.cosmos import CosmosClient, PartitionKey
 from azure.cosmos.exceptions import CosmosResourceNotFoundError
+from azure.identity import DefaultAzureCredential
 from ..models.schemas import Spec, SpecCreateRequest
 from ..core.config import settings
 
@@ -19,13 +20,24 @@ class SpecService:
     
     def _init_cosmos(self) -> None:
         try:
-            if hasattr(settings, 'COSMOS_CONNECTION_STRING') and settings.COSMOS_CONNECTION_STRING:
-                self._cosmos_client = CosmosClient.from_connection_string(settings.COSMOS_CONNECTION_STRING)
-            else:
-                endpoint = getattr(settings, 'COSMOS_ENDPOINT', os.getenv('COSMOS_ENDPOINT'))
-                key = getattr(settings, 'COSMOS_KEY', os.getenv('COSMOS_KEY'))
-                if endpoint and key:
-                    self._cosmos_client = CosmosClient(endpoint, key)
+            endpoint = getattr(settings, 'COSMOS_ENDPOINT', os.getenv('COSMOS_ENDPOINT'))
+            
+            if endpoint:
+                try:
+                    credential = DefaultAzureCredential()
+                    self._cosmos_client = CosmosClient(endpoint, credential)
+                    logger.info("Using AAD authentication for Cosmos DB")
+                except Exception as aad_error:
+                    logger.warning(f"AAD authentication failed: {aad_error}")
+                    
+                    if hasattr(settings, 'COSMOS_CONNECTION_STRING') and settings.COSMOS_CONNECTION_STRING:
+                        self._cosmos_client = CosmosClient.from_connection_string(settings.COSMOS_CONNECTION_STRING)
+                        logger.info("Using connection string authentication for Cosmos DB")
+                    else:
+                        key = getattr(settings, 'COSMOS_KEY', os.getenv('COSMOS_KEY'))
+                        if key:
+                            self._cosmos_client = CosmosClient(endpoint, key)
+                            logger.info("Using key-based authentication for Cosmos DB")
             
             if self._cosmos_client:
                 database_id = getattr(settings, 'COSMOS_DATABASE_ID', os.getenv('COSMOS_DATABASE_ID', 'aifoundry'))
@@ -44,11 +56,16 @@ class SpecService:
             logger.error(f"Failed to initialize Cosmos DB: {e}")
             self._cosmos_client = None
     
-    def _fallback_storage(self) -> Dict[str, Any]:
-        return {}
+    def _init_fallback_storage(self) -> None:
+        """Initialize in-memory storage as fallback when Cosmos DB is not available"""
+        self._memory_specs: Dict[str, Spec] = {}
+        self._memory_versions: Dict[str, List[Dict[str, Any]]] = {}
+        logger.info("Initialized in-memory storage for specs")
     
     def get_all_specs(self) -> List[Spec]:
         if not self._container:
+            if hasattr(self, '_memory_specs'):
+                return list(self._memory_specs.values())
             return []
         
         try:
@@ -63,6 +80,8 @@ class SpecService:
     
     def get_spec_by_id(self, spec_id: str) -> Optional[Spec]:
         if not self._container:
+            if hasattr(self, '_memory_specs'):
+                return self._memory_specs.get(spec_id)
             return None
         
         try:
@@ -121,6 +140,17 @@ class SpecService:
                 self._create_version_record(spec_id, 1, "Initial specification created", spec_dict)
             except Exception as e:
                 logger.error(f"Error creating spec in Cosmos DB: {e}")
+        else:
+            if hasattr(self, '_memory_specs'):
+                self._memory_specs[spec_id] = new_spec
+                if not hasattr(self, '_memory_versions'):
+                    self._memory_versions = {}
+                self._memory_versions[spec_id] = [{
+                    "version": 1,
+                    "change_description": "Initial specification created",
+                    "timestamp": datetime.now().isoformat(),
+                    "spec_data": new_spec.model_dump()
+                }]
         
         return new_spec
     
@@ -156,6 +186,18 @@ class SpecService:
                 self._create_version_record(spec_id, updated_spec.version, "Specification updated", spec_dict)
             except Exception as e:
                 logger.error(f"Error updating spec in Cosmos DB: {e}")
+        else:
+            if hasattr(self, '_memory_specs'):
+                self._memory_specs[spec_id] = updated_spec
+                if hasattr(self, '_memory_versions'):
+                    if spec_id not in self._memory_versions:
+                        self._memory_versions[spec_id] = []
+                    self._memory_versions[spec_id].append({
+                        "version": updated_spec.version,
+                        "change_description": "Specification updated",
+                        "timestamp": datetime.now().isoformat(),
+                        "spec_data": updated_spec.model_dump()
+                    })
         
         return updated_spec
     
@@ -194,6 +236,21 @@ class SpecService:
                 self._create_version_record(spec_id, updated_spec.version, change_description, spec_dict)
             except Exception as e:
                 logger.error(f"Error updating spec phase in Cosmos DB: {e}")
+        else:
+            if hasattr(self, '_memory_specs'):
+                self._memory_specs[spec_id] = updated_spec
+                if hasattr(self, '_memory_versions'):
+                    if spec_id not in self._memory_versions:
+                        self._memory_versions[spec_id] = []
+                    change_description = f"Phase updated to {phase}"
+                    if kwargs:
+                        change_description += f" with changes: {', '.join(kwargs.keys())}"
+                    self._memory_versions[spec_id].append({
+                        "version": updated_spec.version,
+                        "change_description": change_description,
+                        "timestamp": datetime.now().isoformat(),
+                        "spec_data": updated_spec.model_dump()
+                    })
         
         return updated_spec
     

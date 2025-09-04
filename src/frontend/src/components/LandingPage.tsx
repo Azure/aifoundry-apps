@@ -75,7 +75,7 @@ export function LandingPage() {
             <CardContent className="text-center">
               <ul className="text-sm text-figma-text-secondary mb-6 space-y-2">
                 <li>• Ready-to-use AI solutions</li>
-                <li>• Multiple languages & frameworks</li>
+                <li>• Multiple languages &amp; frameworks</li>
                 <li>• SWE agent integration</li>
               </ul>
               <Button asChild className="w-full bg-white text-black hover:bg-gray-800 hover:text-white border border-gray-300 hover:border-gray-800 transition-colors">
@@ -102,8 +102,8 @@ export function LandingPage() {
             </CardHeader>
             <CardContent className="text-center">
               <ul className="text-sm text-figma-text-secondary mb-6 space-y-2">
-                <li>• Prompt Chaining & Routing</li>
-                <li>• Parallelization & Orchestration</li>
+                <li>• Prompt Chaining &amp; Routing</li>
+                <li>• Parallelization &amp; Orchestration</li>
                 <li>• Evaluator-Optimizer patterns</li>
               </ul>
               <Button asChild className="w-full bg-white text-black hover:bg-gray-800 hover:text-white border border-gray-300 hover:border-gray-800 transition-colors">
