@@ -985,11 +985,20 @@ export function SpecWorkbench() {
               variant="outline"
               size="sm"
               onClick={() => setIsAgentPanelExpanded(true)}
-              className="text-figma-text-secondary hover:text-figma-text-primary border-figma-light-gray bg-figma-medium-gray shadow-lg rounded-l-md rounded-r-none border-r-0 px-3 py-6 flex flex-col items-center justify-center writing-mode-vertical"
-              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+              className="text-figma-text-secondary hover:text-figma-text-primary border-figma-light-gray bg-figma-medium-gray shadow-lg rounded-l-md rounded-r-none border-r-0 px-2 py-8 flex flex-col items-center justify-center gap-1"
             >
-              <ChevronLeft className="h-4 w-4 mb-1" />
-              <span className="text-xs font-medium">Show Panel</span>
+              <ChevronLeft className="h-4 w-4" />
+              <div className="flex flex-col items-center text-xs font-medium leading-none">
+                <span>S</span>
+                <span>h</span>
+                <span>o</span>
+                <span>w</span>
+                <span className="mt-1">P</span>
+                <span>a</span>
+                <span>n</span>
+                <span>e</span>
+                <span>l</span>
+              </div>
             </Button>
           </div>
         )}
