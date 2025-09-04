@@ -17,6 +17,38 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+@router.get("/system-check")
+async def system_check():
+    """System requirements check (web equivalent of specify check command)"""
+    
+    checks = {
+        "azure_openai": bool(settings.AZURE_OPENAI_KEY and settings.AZURE_OPENAI_ENDPOINT),
+        "cosmos_db": bool(getattr(settings, 'COSMOS_CONNECTION_STRING', None) or 
+                         (getattr(settings, 'COSMOS_ENDPOINT', None) and getattr(settings, 'COSMOS_KEY', None))),
+        "github_oauth": bool(getattr(settings, 'GITHUB_CLIENT_ID', None) and getattr(settings, 'GITHUB_CLIENT_SECRET', None)),
+        "internet_connectivity": True
+    }
+    
+    messages = []
+    if not checks["azure_openai"]:
+        messages.append("Azure OpenAI configuration missing - spec enhancement may not work")
+    if not checks["cosmos_db"]:
+        messages.append("Cosmos DB configuration missing - specs will not be persisted")
+    if not checks["github_oauth"]:
+        messages.append("GitHub OAuth configuration missing - agent assignment may not work")
+    
+    all_passed = all(checks.values())
+    status = "ready" if all_passed else "partial"
+    
+    if not messages:
+        messages.append("All systems operational - ready for spec-driven development")
+    
+    return SystemCheckResponse(
+        status=status,
+        checks=checks,
+        messages=messages
+    )
+
 @router.get("")
 async def get_specs(spec_service: SpecService = Depends(get_spec_service)):
     """Get all specifications"""
@@ -1010,6 +1042,7 @@ Please start by creating the GitHub repository and then implement according to t
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error assigning specification to agent: {str(e)}")
 
+
 @router.post("/constitutional-validation")
 async def validate_constitutional_compliance(request: ConstitutionalValidationRequest):
     """Validate plan against spec-kit constitutional principles"""
@@ -1074,37 +1107,6 @@ async def spec_kit_init(request: SpecKitInitRequest):
         ]
     }
 
-@router.get("/system-check")
-async def system_check():
-    """System requirements check (web equivalent of specify check command)"""
-    
-    checks = {
-        "azure_openai": bool(settings.AZURE_OPENAI_KEY and settings.AZURE_OPENAI_ENDPOINT),
-        "cosmos_db": bool(getattr(settings, 'COSMOS_CONNECTION_STRING', None) or 
-                         (getattr(settings, 'COSMOS_ENDPOINT', None) and getattr(settings, 'COSMOS_KEY', None))),
-        "github_oauth": bool(getattr(settings, 'GITHUB_CLIENT_ID', None) and getattr(settings, 'GITHUB_CLIENT_SECRET', None)),
-        "internet_connectivity": True
-    }
-    
-    messages = []
-    if not checks["azure_openai"]:
-        messages.append("Azure OpenAI configuration missing - spec enhancement may not work")
-    if not checks["cosmos_db"]:
-        messages.append("Cosmos DB configuration missing - specs will not be persisted")
-    if not checks["github_oauth"]:
-        messages.append("GitHub OAuth configuration missing - agent assignment may not work")
-    
-    all_passed = all(checks.values())
-    status = "ready" if all_passed else "partial"
-    
-    if not messages:
-        messages.append("All systems operational - ready for spec-driven development")
-    
-    return SystemCheckResponse(
-        status=status,
-        checks=checks,
-        messages=messages
-    )
 
 @router.get("/{spec_id}/versions")
 async def get_spec_versions(spec_id: str, spec_service: SpecService = Depends(get_spec_service)):

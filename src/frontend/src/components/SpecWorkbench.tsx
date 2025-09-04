@@ -358,32 +358,69 @@ export function SpecWorkbench() {
 
   // Spec-kit phase functions
   const handleSpecifyPhase = async () => {
-    if (!spec || !requirements.trim()) return
+    if (!requirements.trim()) return
     
     setIsProcessingPhase(true)
     try {
-      const response = await fetch(`${apiUrl}/api/specs/${spec.id}/specify`, {
+      let currentSpec = spec
+      if (!currentSpec && isNewSpec) {
+        const specData = {
+          title,
+          description,
+          content: '',
+          tags
+        }
+
+        const createResponse = await fetch(`${apiUrl}/api/specs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(specData)
+        })
+
+        if (createResponse.ok) {
+          currentSpec = await createResponse.json()
+          setSpec(currentSpec)
+          
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        } else {
+          const errorText = await createResponse.text()
+          throw new Error(`Failed to create specification: ${errorText}`)
+        }
+      }
+
+      if (!currentSpec) {
+        throw new Error('No specification available')
+      }
+
+      const response = await fetch(`${apiUrl}/api/specs/${currentSpec.id}/specify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          requirements: requirements,
-          context: description 
+          requirements: requirements.trim(),
+          tech_stack: techStack,
+          architecture: architecture
         })
       })
       
       if (response.ok) {
         const result = await response.json()
         setSpec(result.spec)
+        setContent(result.spec.specification || '')
         setSpecPhase('plan')
         setActiveTab('plan')
         setShowBasicDetails(false)
         toast({ title: '/specify Phase Complete', description: 'Feature specification created following spec-kit methodology.' })
       } else {
-        throw new Error('Failed to process specification')
+        const errorText = await response.text()
+        throw new Error(`Failed to process specification: ${response.status} ${errorText}`)
       }
     } catch (error) {
       console.error('Error in specify phase:', error)
-      toast({ title: 'Error', description: 'Failed to process specification', variant: 'destructive' as any })
+      toast({ 
+        title: 'Specification Error', 
+        description: `Failed to process specification: ${error.message}`,
+        variant: 'destructive' as any 
+      })
     } finally {
       setIsProcessingPhase(false)
     }
@@ -668,7 +705,7 @@ export function SpecWorkbench() {
                         </span>
                       </div>
                       
-                      {spec.constitutional_compliance.violations.length > 0 && (
+                      {spec.constitutional_compliance.violations && spec.constitutional_compliance.violations.length > 0 && (
                         <div className="text-xs text-figma-text-secondary">
                           <div className="font-medium mb-1">Violations:</div>
                           {spec.constitutional_compliance.violations.map((violation, idx) => (
@@ -677,13 +714,15 @@ export function SpecWorkbench() {
                         </div>
                       )}
                       
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {Object.entries(spec.constitutional_compliance.gates_passed).map(([gate, passed]) => (
-                          <Badge key={gate} className={`text-xs ${passed ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
-                            {gate}: {passed ? '✅' : '❌'}
-                          </Badge>
-                        ))}
-                      </div>
+                      {spec.constitutional_compliance.gates_passed && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {Object.entries(spec.constitutional_compliance.gates_passed).map(([gate, passed]) => (
+                            <Badge key={gate} className={`text-xs ${passed ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+                              {gate}: {passed ? '✅' : '❌'}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
