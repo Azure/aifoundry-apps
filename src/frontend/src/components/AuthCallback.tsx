@@ -42,7 +42,7 @@ export function AuthCallback() {
       }
 
       try {
-        const response = await fetch(`${(import.meta as any).env.VITE_API_URL}/api/auth/github/callback`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/github/callback`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -62,7 +62,7 @@ export function AuthCallback() {
   lastCodeRef.current = code
 
         navigate('/dashboard', { replace: true })
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current)
         errorTimerRef.current = window.setTimeout(() => {
           setError('Authentication failed. Please try again.')

@@ -1,9 +1,21 @@
-import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, FileText, GitBranch, Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { ArrowLeft, Plus, FileText, GitBranch, CheckCircle, AlertCircle } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Link } from 'react-router-dom'
+
+interface PlanTemplate {
+  technical_context?: Record<string, string>
+  constitution_check?: Record<string, unknown>
+  project_structure?: Record<string, unknown>
+  research_content?: string
+  data_model_content?: string
+  contracts_content?: string
+  quickstart_content?: string
+  complexity_tracking?: Record<string, unknown>
+  progress_tracking?: Record<string, unknown>
+}
 
 interface Spec {
   id: string
@@ -16,6 +28,7 @@ interface Spec {
   updated_at: string
   tags: string[]
   version: number
+  plan_template?: PlanTemplate
   constitutional_compliance?: {
     is_compliant: boolean
     gates_passed: Record<string, boolean>
@@ -28,11 +41,7 @@ export function SpecsPage() {
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
-  useEffect(() => {
-    fetchSpecs()
-  }, [])
-
-  const fetchSpecs = async () => {
+  const fetchSpecs = useCallback(async () => {
     try {
       const response = await fetch(`${apiUrl}/api/specs`)
       if (response.ok) {
@@ -44,37 +53,11 @@ export function SpecsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiUrl])
 
-  const getPhaseIcon = (phase: string) => {
-    switch (phase) {
-      case 'specification':
-        return <FileText className="h-4 w-4" />
-      case 'plan':
-        return <GitBranch className="h-4 w-4" />
-      case 'tasks':
-        return <CheckCircle className="h-4 w-4" />
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-400" />
-      default:
-        return <Clock className="h-4 w-4" />
-    }
-  }
-
-  const getPhaseColor = (phase: string) => {
-    switch (phase) {
-      case 'specification':
-        return 'bg-blue-900/30 text-blue-400'
-      case 'plan':
-        return 'bg-yellow-900/30 text-yellow-400'
-      case 'tasks':
-        return 'bg-purple-900/30 text-purple-400'
-      case 'completed':
-        return 'bg-green-900/30 text-green-400'
-      default:
-        return 'bg-gray-900/30 text-gray-400'
-    }
-  }
+  useEffect(() => {
+    fetchSpecs()
+  }, [fetchSpecs])
 
   const getConstitutionalStatus = (spec: Spec) => {
     if (!spec.constitutional_compliance) return null
@@ -198,7 +181,7 @@ export function SpecsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {specs.map((spec) => (
-              <Card key={spec.id} className="bg-figma-medium-gray border-figma-light-gray hover:border-figma-text-secondary transition-colors">
+              <Card key={spec.id} className="bg-figma-medium-gray border-figma-light-gray hover:border-figma-text-secondary transition-colors flex flex-col h-full">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -214,8 +197,8 @@ export function SpecsPage() {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
+                <CardContent className="pt-0 flex flex-col flex-grow">
+                  <div className="space-y-3 flex-grow">
                     {spec.feature_number && (
                       <div className="flex items-center gap-2 text-sm text-figma-text-secondary">
                         <GitBranch className="h-4 w-4" />
@@ -237,17 +220,17 @@ export function SpecsPage() {
                         </Badge>
                       ))}
                     </div>
-                    
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="text-xs text-figma-text-secondary">
-                        Updated {new Date(spec.updated_at).toLocaleDateString()}
-                      </div>
-                      <Button asChild size="sm" variant="outline">
-                        <Link to={`/spec/${spec.id}`}>
-                          Open
-                        </Link>
-                      </Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-4 mt-auto">
+                    <div className="text-xs text-figma-text-secondary">
+                      Updated {new Date(spec.updated_at).toLocaleDateString()}
                     </div>
+                    <Button asChild size="sm" variant="outline">
+                      <Link to={`/spec/${spec.id}`}>
+                        Open
+                      </Link>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

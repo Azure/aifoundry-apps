@@ -24,7 +24,7 @@ interface SWEAgentSelectionProps {
   setApiKey: (key: string) => void
   endpoint: string
   setEndpoint: (endpoint: string) => void
-  customization: any
+  customization: Record<string, unknown>
   workflowMode: 'breakdown' | 'oneshot'
   selectedTasks: Set<string>
   isAssigningTasks: boolean

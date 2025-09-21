@@ -2,20 +2,20 @@ import { useState } from 'react'
 import { Badge } from './ui/badge'
 
 interface Props {
-  result: any
+  result: Record<string, unknown>
 }
 
 export function AssignmentResult({ result }: Props) {
   const [showRaw, setShowRaw] = useState(false)
 
-  const status: string = result?.status || result?.session_status || 'unknown'
-  const agent: string | undefined = result?.agent || result?.agent_id
-  const message: string | undefined = result?.message
-  const specId: string | undefined = result?.spec_id || result?.template_id
-  const sessionId: string | undefined = result?.session_id
-  const sessionUrl: string | undefined = result?.session_url || (sessionId ? `https://app.devin.ai/sessions/${sessionId}` : undefined)
-  const repoUrl: string | undefined = result?.repository_url || result?.repo_url
-  const issueUrl: string | undefined = result?.issue_url
+  const status: string = (result?.status as string) || (result?.session_status as string) || 'unknown'
+  const agent: string | undefined = (result?.agent as string) || (result?.agent_id as string)
+  const message: string | undefined = result?.message as string
+  const specId: string | undefined = (result?.spec_id as string) || (result?.template_id as string)
+  const sessionId: string | undefined = result?.session_id as string
+  const sessionUrl: string | undefined = (result?.session_url as string) || (sessionId ? `https://app.devin.ai/sessions/${sessionId}` : undefined)
+  const repoUrl: string | undefined = (result?.repository_url as string) || (result?.repo_url as string)
+  const issueUrl: string | undefined = result?.issue_url as string
 
   const badgeVariant =
     status === 'success' ? 'default' : status === 'error' ? 'destructive' : 'secondary'
@@ -23,7 +23,7 @@ export function AssignmentResult({ result }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
-        <Badge variant={badgeVariant as any} className="capitalize">{status}</Badge>
+        <Badge variant={badgeVariant as "default" | "destructive" | "secondary"} className="capitalize">{status}</Badge>
         {agent && <span className="text-sm text-figma-text-secondary">Agent: <span className="text-white">{agent}</span></span>}
         {specId && <span className="text-sm text-figma-text-secondary">Spec: <span className="text-white">{specId}</span></span>}
       </div>

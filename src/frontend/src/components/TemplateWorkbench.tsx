@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ArrowLeft, Settings, GitBranch, Loader2, X, ExternalLink } from 'lucide-react'
@@ -28,6 +28,7 @@ interface CustomizationRequest {
   use_a2a: boolean
   owner?: string
   repo?: string
+  [key: string]: unknown
 }
 
 interface TaskBreakdown {
@@ -69,7 +70,7 @@ export function TemplateWorkbench() {
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false)
   const [isAssigningTasks, setIsAssigningTasks] = useState(false)
   const [workflowMode, setWorkflowMode] = useState<'breakdown' | 'oneshot'>('oneshot')
-  const [assignmentResponse, setAssignmentResponse] = useState<any>(null)
+  const [assignmentResponse, setAssignmentResponse] = useState<Record<string, unknown> | null>(null)
   const [assignmentPhase, setAssignmentPhase] = useState<'idle' | 'fork' | 'write' | 'agent' | 'done'>('idle')
   const [banner, setBanner] = useState<{ repoUrl?: string; sessionUrl?: string; agent?: string } | null>(null)
   const [progressLog, setProgressLog] = useState<string[]>([])
@@ -83,13 +84,7 @@ export function TemplateWorkbench() {
 
   const apiUrl = import.meta.env.VITE_API_URL
 
-  useEffect(() => {
-    if (templateId) {
-      fetchTemplate()
-    }
-  }, [templateId])
-
-  const fetchTemplate = async () => {
+  const fetchTemplate = useCallback(async () => {
     try {
       const response = await fetch(`${apiUrl}/api/templates/${templateId}`)
       if (response.ok) {
@@ -101,7 +96,13 @@ export function TemplateWorkbench() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiUrl, templateId])
+
+  useEffect(() => {
+    if (templateId) {
+      fetchTemplate()
+    }
+  }, [templateId, fetchTemplate])
 
   const generateTaskBreakdown = async () => {
     setIsGeneratingTasks(true)
@@ -155,9 +156,9 @@ export function TemplateWorkbench() {
     try {
       // Start progress stream
       const jobId = (window.crypto && 'randomUUID' in crypto)
-        ? (crypto as any).randomUUID()
+        ? (crypto as Crypto).randomUUID()
         : Math.random().toString(36).slice(2)
-      ;(window as any)._currentProgressJob = jobId
+      ;(window as Window & { _currentProgressJob?: string })._currentProgressJob = jobId
       const es = new EventSource(`${apiUrl}/api/progress/${jobId}/stream`)
       setProgressJob(jobId)
       const esRefLocal = es
@@ -171,14 +172,16 @@ export function TemplateWorkbench() {
       es.addEventListener('copy-ok', () => { setProgressLog(prev => [...prev, 'Copy completed']); mark(); bump(70) })
       es.addEventListener('copy-progress', (e: MessageEvent) => {
         try {
-          const data = JSON.parse((e as any).data)
+          const data = JSON.parse((e as MessageEvent).data)
           const { copied, total } = data || {}
           if (copied) {
             setProgressLog(prev => [...prev, `Copied ${copied}${total ? ` / ${total}` : ''} files…`])
             if (total) setProgressPercent(Math.max(70, Math.min(90, Math.round((copied / total) * 90))))
             mark()
           }
-        } catch {}
+        } catch {
+          // Ignore errors during progress updates
+        }
       })
       es.addEventListener('write-agents', () => { setAssignmentPhase('write'); bump(85); mark() })
       es.addEventListener('agent-start', () => { setAssignmentPhase('agent'); bump(90); mark() })
@@ -189,7 +192,9 @@ export function TemplateWorkbench() {
         if (!lastProgressAt) return
         if (Date.now() - (lastProgressAt || 0) > 60000 && !timedOut) {
           setTimedOut(true)
-          try { esRefLocal.close() } catch {}
+          try { esRefLocal.close() } catch {
+            // Ignore errors during cleanup
+          }
           window.clearInterval(interval)
         }
       }, 5000)
@@ -314,7 +319,9 @@ export function TemplateWorkbench() {
                   try {
                     await navigator.clipboard.writeText(copyPayload)
                     toast({ title: 'Links copied' })
-                  } catch {}
+                  } catch {
+                    // Ignore clipboard errors
+                  }
                 }}
               >
                 Copy Links
@@ -357,7 +364,7 @@ export function TemplateWorkbench() {
               View details
             </ToastAction>
           ),
-          variant: 'destructive' as any,
+          variant: 'destructive' as "destructive",
         })
       }
     } catch (error) {
@@ -378,7 +385,7 @@ export function TemplateWorkbench() {
             View details
           </ToastAction>
         ),
-        variant: 'destructive' as any,
+        variant: 'destructive' as "destructive",
       })
     } finally {
       setIsAssigningTasks(false)
@@ -389,7 +396,7 @@ export function TemplateWorkbench() {
   const resumeAfterManualFork = async () => {
     if (!apiKey) return
     const jobId = (window.crypto && 'randomUUID' in crypto)
-      ? (crypto as any).randomUUID()
+      ? (crypto as Crypto).randomUUID()
       : Math.random().toString(36).slice(2)
     setIsAssigningTasks(true)
     setTimedOut(false)
@@ -402,7 +409,9 @@ export function TemplateWorkbench() {
       es.addEventListener('write-agents', () => setAssignmentPhase('write'))
       es.addEventListener('agent-start', () => setAssignmentPhase('agent'))
       es.addEventListener('done', () => { setAssignmentPhase('done'); es.close() })
-    } catch {}
+    } catch {
+      // Ignore errors during EventSource setup
+    }
     const payload = {
       agent_id: 'devin',
       api_key: apiKey,
@@ -436,7 +445,7 @@ export function TemplateWorkbench() {
       setBanner({ repoUrl, sessionUrl, agent: 'devin' })
       toast({ title: 'Resumed successfully', description: 'Started Devin session with your forked repo' })
     } catch (e) {
-      toast({ title: 'Resume failed', description: String(e), variant: 'destructive' as any })
+      toast({ title: 'Resume failed', description: String(e), variant: 'destructive' as "destructive" })
       setIsAssigningTasks(false)
     }
   }
@@ -859,10 +868,10 @@ export function TemplateWorkbench() {
                         if (data.ok) {
                           toast({ title: `GitHub token OK for ${data.login}`, description: `Scopes: ${(data.scopes || []).join(', ') || 'none'}` })
                         } else {
-                          toast({ title: 'Token check failed', description: data.error || String(data.status), variant: 'destructive' as any })
+                          toast({ title: 'Token check failed', description: data.error || String(data.status), variant: 'destructive' as "destructive" })
                         }
-                      } catch (e: any) {
-                        toast({ title: 'Token check error', description: String(e), variant: 'destructive' as any })
+                      } catch (e: unknown) {
+                        toast({ title: 'Token check error', description: String(e), variant: 'destructive' as "destructive" })
                       }
                     }}
                   >
@@ -918,7 +927,9 @@ export function TemplateWorkbench() {
                 onClick={async () => {
                   try {
                     if (progressJob) await fetch(`${apiUrl}/api/progress/${progressJob}/cancel`, { method: 'POST' })
-                  } catch {}
+                  } catch {
+                    // Ignore cancellation errors
+                  }
                   setIsAssigningTasks(false)
                   setAssignmentPhase('idle')
                   setProgressLog(prev => [...prev, 'Cancelled'])
@@ -988,45 +999,45 @@ export function TemplateWorkbench() {
                       {assignmentResponse.status === 'success' ? 'Success' : 
                        assignmentResponse.status === 'partial_success' ? 'Partial Success' : 'Error'}
                     </span>
-                    {assignmentResponse.agent && (
+                    {(assignmentResponse as Record<string, unknown>).agent ? (
                       <span className="ml-2 text-figma-text-secondary text-sm">
-                        Agent: {assignmentResponse.agent}
+                        Agent: {String((assignmentResponse as Record<string, unknown>).agent)}
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <p className="text-figma-text-primary text-sm leading-relaxed">
-                    {assignmentResponse.message}
+                    {String((assignmentResponse as Record<string, unknown>).message)}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-3">
-                    {assignmentResponse.repository_url && (
+                    {(assignmentResponse as Record<string, unknown>).repository_url ? (
                       <a
-                        href={assignmentResponse.repository_url}
+                        href={String((assignmentResponse as Record<string, unknown>).repository_url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm underline text-figma-text-secondary hover:text-white"
                       >
                         Open GitHub Repository
                       </a>
-                    )}
-                    {(assignmentResponse.session_url || assignmentResponse.session_id) && (
+                    ) : null}
+                    {((assignmentResponse as Record<string, unknown>).session_url || (assignmentResponse as Record<string, unknown>).session_id) ? (
                       <a
-                        href={assignmentResponse.session_url || `https://app.devin.ai/sessions/${assignmentResponse.session_id}`}
+                        href={String((assignmentResponse as Record<string, unknown>).session_url) || `https://app.devin.ai/sessions/${String((assignmentResponse as Record<string, unknown>).session_id)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm underline text-figma-text-secondary hover:text-white"
                       >
                         Open Devin Session
                       </a>
-                    )}
+                    ) : null}
                   </div>
-                  {assignmentResponse.result && (
+                  {(assignmentResponse as Record<string, unknown>).result ? (
                     <div className="mt-3 p-3 bg-figma-dark-gray rounded border border-figma-light-gray">
                       <p className="text-figma-text-secondary text-xs mb-1">Response Details:</p>
                       <pre className="text-figma-text-primary text-xs overflow-x-auto">
-                        {JSON.stringify(assignmentResponse.result, null, 2)}
+                        {JSON.stringify((assignmentResponse as Record<string, unknown>).result, null, 2)}
                       </pre>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </CardContent>
             </Card>

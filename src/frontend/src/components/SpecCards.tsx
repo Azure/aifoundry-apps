@@ -5,6 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge'
 import { Link } from 'react-router-dom'
 
+interface PlanTemplate {
+  technical_context?: Record<string, string>
+  constitution_check?: Record<string, unknown>
+  project_structure?: Record<string, unknown>
+  research_content?: string
+  data_model_content?: string
+  contracts_content?: string
+  quickstart_content?: string
+  complexity_tracking?: Record<string, unknown>
+  progress_tracking?: Record<string, unknown>
+}
+
 interface Spec {
   id: string
   title: string
@@ -13,6 +25,7 @@ interface Spec {
   created_at: string
   updated_at: string
   tags: string[]
+  plan_template?: PlanTemplate
 }
 
 export function SpecCards() {

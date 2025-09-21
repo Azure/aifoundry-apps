@@ -20,6 +20,8 @@ class Settings:
     
     DEVIN_API_BASE_URL: str = os.getenv("DEVIN_API_BASE_URL", "https://api.devin.ai")
     
+    HF_API_TOKEN: str = os.getenv("HF_TOKEN", "")
+    
     COSMOS_CONNECTION_STRING: str = os.getenv("COSMOS_CONNECTION_STRING", "")
     COSMOS_DATABASE_ID: str = os.getenv("COSMOS_DATABASE_ID", "aifoundry")
 

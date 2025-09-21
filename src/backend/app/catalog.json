@@ -1,5 +1,33 @@
 [
   {
+    "id": "ai-powered-customer-support-system",
+    "title": "AI-Powered Customer Support System",
+    "description": "Intelligent customer support system with AI-powered ticket routing, automated responses, and sentiment analysis",
+    "tags": ["customer-support", "ai-agent", "sentiment-analysis", "ticket-routing"],
+    "languages": ["Python", "JavaScript"],
+    "models": ["Azure OpenAI", "GPT-4"],
+    "databases": ["PostgreSQL", "Redis"],
+    "collection": "Azure AI App Templates",
+    "task": "Agent",
+    "pattern": null,
+    "github_url": "https://github.com/azure-samples/ai-powered-customer-support",
+    "fork_count": 0,
+    "star_count": 0,
+    "is_featured": true,
+    "icon": "\ud83e\udd16",
+    "created_at": "2025-08-29",
+    "planning": {
+      "tech_stack": "FastAPI (Python), React + TypeScript, PostgreSQL, Redis, Azure OpenAI, Azure Cognitive Services, WebSockets, Docker",
+      "architecture": "Microservices architecture with FastAPI backend, React frontend, PostgreSQL for ticket storage, Redis for caching and sessions, Azure OpenAI for NLP tasks, real-time updates via WebSockets",
+      "non_functional_requirements": "High availability (99.9%), low latency (<300ms), secure authentication, multi-language support, real-time sentiment analysis, scalable ticket processing, comprehensive audit logging",
+      "gates": {
+        "simplicity": true,
+        "anti_abstraction": true,
+        "integration_first": true
+      }
+    }
+  },
+  {
     "id": "phoenix-on-azure",
     "title": "Phoenix On Azure",
     "description": "Contribute to Arize-ai/phoenix-on-azure development by creating an account on GitHub.",
@@ -33,7 +61,17 @@
     "star_count": 0,
     "is_featured": false,
     "icon": "\ud83e\udd16",
-    "created_at": "2025-08-29"
+    "created_at": "2025-08-29",
+    "planning": {
+      "tech_stack": "Java 17, Spring Boot 3.x, LangChain4j, Azure OpenAI, PostgreSQL, Redis, Docker, Kubernetes",
+      "architecture": "Microservices architecture with Spring Boot services, event-driven communication via Apache Kafka, API Gateway for external access, containerized deployment on Azure Container Apps",
+      "non_functional_requirements": "High availability (99.9%), low latency (<200ms), secure authentication with OAuth2/OIDC, PCI DSS compliance, horizontal scalability, comprehensive logging and monitoring",
+      "gates": {
+        "simplicity": true,
+        "anti_abstraction": true,
+        "integration_first": true
+      }
+    }
   },
   {
     "id": "ai-chat-aspire-meai-csharp",
@@ -51,7 +89,17 @@
     "star_count": 0,
     "is_featured": false,
     "icon": "\ud83e\udd16",
-    "created_at": "2025-08-29"
+    "created_at": "2025-08-29",
+    "planning": {
+      "tech_stack": "C# .NET 8, .NET Aspire, Microsoft.Extensions.AI, Azure OpenAI, Azure Container Apps, Azure Service Bus",
+      "architecture": "Cloud-native application using .NET Aspire orchestration, managed identity for Azure services, containerized deployment on Azure Container Apps with service discovery and health checks",
+      "non_functional_requirements": "Scalable chat application, managed identity authentication, real-time communication, Azure-native deployment, monitoring and observability built-in",
+      "gates": {
+        "simplicity": true,
+        "anti_abstraction": true,
+        "integration_first": true
+      }
+    }
   },
   {
     "id": "ai-chat-quickstart-csharp",

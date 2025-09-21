@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Aptos:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Monaspace+Neon:wght@400;500;600&display=swap');
+@import '@uiw/react-md-editor/markdown-editor.css';
 
 @tailwind base;
 @tailwind components;
@@ -45,5 +46,57 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   
+}
+
+/* Custom styles for MDEditor in dark theme */
+.wmde-markdown {
+  color: #ffffff !important;
+}
+
+.wmde-markdown h1,
+.wmde-markdown h2,
+.wmde-markdown h3,
+.wmde-markdown h4,
+.wmde-markdown h5,
+.wmde-markdown h6 {
+  color: #ffffff !important;
+}
+
+.wmde-markdown p {
+  color: #e5e5e5 !important;
+}
+
+.wmde-markdown li {
+  color: #e5e5e5 !important;
+}
+
+.wmde-markdown strong {
+  color: #93c5fd !important;
+}
+
+.wmde-markdown em {
+  color: #d1d5db !important;
+}
+
+.wmde-markdown a {
+  color: #60a5fa !important;
+}
+
+.wmde-markdown a:hover {
+  color: #93c5fd !important;
+}
+
+.wmde-markdown code {
+  color: #86efac !important;
+  background-color: #374151 !important;
+}
+
+.wmde-markdown pre {
+  background-color: #1f2937 !important;
+  color: #e5e5e5 !important;
+}
+
+.wmde-markdown pre code {
+  background-color: transparent !important;
 }
 
