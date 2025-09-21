@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { Header } from './components/Header'
@@ -13,6 +13,7 @@ import { AuthCallback } from './components/AuthCallback'
 import { UserDashboard } from './components/UserDashboard'
 import { Footer } from './components/Footer'
 import { Toaster } from './components/ui/toaster'
+import { PostTrainingPage } from './components/PostTrainingPage'
 
 export interface Template {
   id: string
@@ -30,6 +31,16 @@ export interface Template {
   is_featured: boolean
   icon: string
   created_at: string
+  planning?: {
+    tech_stack?: string
+    architecture?: string
+    non_functional_requirements?: string
+    gates?: {
+      simplicity?: boolean
+      anti_abstraction?: boolean
+      integration_first?: boolean
+    }
+  }
 }
 
 export interface FilterOptions {
@@ -63,15 +74,7 @@ function App() {
 
   const apiUrl = import.meta.env.VITE_API_URL
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  useEffect(() => {
-    fetchTemplates()
-  }, [filters])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [featuredRes, filtersRes] = await Promise.all([
         fetch(`${apiUrl}/api/templates/featured`),
@@ -88,9 +91,9 @@ function App() {
     } catch (error) {
       console.error('Error fetching data:', error)
     }
-  }
+  }, [apiUrl])
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
       const params = new URLSearchParams()
       Object.entries(filters).forEach(([key, value]) => {
@@ -107,7 +110,15 @@ function App() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiUrl, filters])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  useEffect(() => {
+    fetchTemplates()
+  }, [filters, fetchTemplates])
 
   const updateFilters = (newFilters: Partial<typeof filters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }))
@@ -134,9 +145,11 @@ function App() {
             } />
             <Route path="/template/:templateId" element={<TemplateWorkbench />} />
             <Route path="/specs" element={<SpecsPage />} />
+            <Route path="/spec/new" element={<SpecWorkbench />} />
             <Route path="/spec/:specId" element={<SpecWorkbench />} />
             <Route path="/auth/github/callback" element={<AuthCallback />} />
             <Route path="/dashboard" element={<UserDashboard />} />
+            <Route path="/post-training" element={<PostTrainingPage />} />
           </Routes>
         </main>
         <Footer />

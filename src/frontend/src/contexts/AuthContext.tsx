@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async () => {
     try {
-      const response = await fetch(`${(import.meta as any).env.VITE_API_URL}/api/auth/github`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/github`)
       const data = await response.json()
       window.location.href = data.auth_url
     } catch (error) {

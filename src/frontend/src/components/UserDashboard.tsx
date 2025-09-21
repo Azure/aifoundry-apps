@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
 
@@ -27,19 +27,12 @@ export function UserDashboard() {
   const [hasMore, setHasMore] = useState(true)
   const [searchPage, setSearchPage] = useState(1)
   const [searchHasMore, setSearchHasMore] = useState(true)
-  const [assignments, setAssignments] = useState<any[]>([])
+  const [assignments, setAssignments] = useState<Record<string, unknown>[]>([])
   const [assignmentsLoading, setAssignmentsLoading] = useState(true)
 
-  useEffect(() => {
-    if (isAuthenticated && accessToken) {
-      fetchRepositories()
-      fetchAssignments()
-    }
-  }, [isAuthenticated, accessToken])
-
-  const fetchAssignments = async () => {
+  const fetchAssignments = useCallback(async () => {
     try {
-      const url = `${(import.meta as any).env.VITE_API_URL}/api/user/assignments`
+      const url = `${import.meta.env.VITE_API_URL}/api/user/assignments`
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
@@ -55,11 +48,40 @@ export function UserDashboard() {
     } finally {
       setAssignmentsLoading(false)
     }
-  }
+  }, [accessToken])
+
+  const fetchRepositories = useCallback(async (nextPage = 1, append = false) => {
+    try {
+      const url = `${import.meta.env.VITE_API_URL}/api/user/repositories?limit=10&page=${nextPage}`
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setRepositories((prev) => append ? [...prev, ...data] : data)
+        setHasMore(Array.isArray(data) && data.length === 10)
+        setPage(nextPage)
+      }
+    } catch (error) {
+      console.error('Failed to fetch repositories:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [accessToken])
+
+  useEffect(() => {
+    if (isAuthenticated && accessToken) {
+      fetchRepositories()
+      fetchAssignments()
+    }
+  }, [isAuthenticated, accessToken, fetchAssignments, fetchRepositories])
 
   const refreshSessionStatus = async (sessionId: string) => {
     try {
-      const response = await fetch(`${(import.meta as any).env.VITE_API_URL}/api/sessions/${sessionId}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sessions/${sessionId}/status`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
@@ -78,28 +100,6 @@ export function UserDashboard() {
     }
   }
 
-  const fetchRepositories = async (nextPage = 1, append = false) => {
-    try {
-      const url = `${(import.meta as any).env.VITE_API_URL}/api/user/repositories?limit=10&page=${nextPage}`
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setRepositories((prev) => append ? [...prev, ...data] : data)
-        setHasMore(Array.isArray(data) && data.length === 10)
-        setPage(nextPage)
-      }
-    } catch (error) {
-      console.error('Failed to fetch repositories:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   // Debounced search
   useEffect(() => {
     if (!isAuthenticated || !accessToken) return
@@ -115,7 +115,7 @@ export function UserDashboard() {
       }
       try {
         setSearchLoading(true)
-        const url = `${(import.meta as any).env.VITE_API_URL}/api/user/repositories/search?q=${encodeURIComponent(q)}&limit=10&page=1`
+        const url = `${import.meta.env.VITE_API_URL}/api/user/repositories/search?q=${encodeURIComponent(q)}&limit=10&page=1`
         const response = await fetch(url, {
           headers: { 'Authorization': `Bearer ${accessToken}` },
           signal: controller.signal
@@ -127,7 +127,7 @@ export function UserDashboard() {
           setSearchPage(1)
         }
       } catch (e) {
-        if ((e as any).name !== 'AbortError') {
+        if ((e as Error).name !== 'AbortError') {
           console.error('Search failed:', e)
         }
       } finally {
@@ -149,7 +149,7 @@ export function UserDashboard() {
     const nextPage = searchPage + 1
     try {
       setSearchLoading(true)
-      const url = `${(import.meta as any).env.VITE_API_URL}/api/user/repositories/search?q=${encodeURIComponent(searchQuery.trim())}&limit=10&page=${nextPage}`
+      const url = `${import.meta.env.VITE_API_URL}/api/user/repositories/search?q=${encodeURIComponent(searchQuery.trim())}&limit=10&page=${nextPage}`
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       })
@@ -364,63 +364,63 @@ export function UserDashboard() {
             ) : (
               <div className="space-y-4">
                 {assignments.map((assignment) => (
-                  <div key={assignment.id} className="bg-figma-medium-gray border border-figma-light-gray rounded-lg p-4">
+                  <div key={String((assignment as Record<string, unknown>).id)} className="bg-figma-medium-gray border border-figma-light-gray rounded-lg p-4">
                     <div className="mb-3">
                       <div className="flex items-center justify-between">
                         <h3 className="text-figma-text-primary text-lg font-medium">
-                          {assignment.template_title}
+                          {String((assignment as Record<string, unknown>).template_title)}
                         </h3>
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-1 rounded text-xs ${
-                            assignment.status === 'success' 
+                            (assignment as Record<string, unknown>).status === 'success' 
                               ? 'bg-green-900 text-green-300 border border-green-400' 
                               : 'bg-red-900 text-red-300 border border-red-400'
                           }`}>
-                            {assignment.status}
+                            {String((assignment as Record<string, unknown>).status)}
                           </span>
-                          {assignment.session_status && (
+                          {(assignment as Record<string, unknown>).session_status ? (
                             <span className={`px-2 py-1 rounded text-xs ${
-                              assignment.session_status === 'completed' 
+                              (assignment as Record<string, unknown>).session_status === 'completed' 
                                 ? 'bg-blue-900 text-blue-300 border border-blue-400'
-                                : assignment.session_status === 'running'
+                                : (assignment as Record<string, unknown>).session_status === 'running'
                                 ? 'bg-yellow-900 text-yellow-300 border border-yellow-400'
                                 : 'bg-gray-900 text-gray-300 border border-gray-400'
                             }`}>
-                              Session: {assignment.session_status}
+                              Session: {String((assignment as Record<string, unknown>).session_status)}
                             </span>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                       <p className="text-figma-text-secondary text-sm">
-                        Agent: {assignment.agent_id} • {assignment.customization.company_name}
+                        Agent: {String((assignment as Record<string, unknown>).agent_id)} • {String(((assignment as Record<string, unknown>).customization as Record<string, unknown>)?.company_name)}
                       </p>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4 text-sm text-figma-text-secondary">
-                        <span>📅 {new Date(assignment.created_at).toLocaleDateString()}</span>
-                        {assignment.repository_url && (
-                          <a href={assignment.repository_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                        <span>📅 {new Date(String((assignment as Record<string, unknown>).created_at)).toLocaleDateString()}</span>
+                        {(assignment as Record<string, unknown>).repository_url ? (
+                          <a href={String((assignment as Record<string, unknown>).repository_url)} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
                             📁 Repository
                           </a>
-                        )}
-                        {assignment.session_url && (
-                          <a href={assignment.session_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                        ) : null}
+                        {(assignment as Record<string, unknown>).session_url ? (
+                          <a href={String((assignment as Record<string, unknown>).session_url)} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
                             🔗 Session
                           </a>
-                        )}
-                        {assignment.session_id && assignment.agent_id === 'devin' && (
+                        ) : null}
+                        {(assignment as Record<string, unknown>).session_id && (assignment as Record<string, unknown>).agent_id === 'devin' ? (
                           <button 
-                            onClick={() => refreshSessionStatus(assignment.session_id)}
+                            onClick={() => refreshSessionStatus(String((assignment as Record<string, unknown>).session_id))}
                             className="text-blue-400 hover:text-blue-300 text-xs"
                           >
                             🔄 Refresh Status
                           </button>
-                        )}
-                        {assignment.issue_url && (
-                          <a href={assignment.issue_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
-                            🐛 Issue #{assignment.issue_number}
+                        ) : null}
+                        {(assignment as Record<string, unknown>).issue_url ? (
+                          <a href={String((assignment as Record<string, unknown>).issue_url)} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                            🐛 Issue #{String((assignment as Record<string, unknown>).issue_number)}
                           </a>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>

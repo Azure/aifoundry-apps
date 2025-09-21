@@ -26,6 +26,7 @@ interface PatternCustomization {
   useA2A: boolean
   owner?: string
   repo?: string
+  [key: string]: unknown
 }
 
 interface CustomizationRequest {
@@ -259,7 +260,7 @@ export function PatternWorkbench() {
         }
       }
     }
-  }, [currentPattern?.id, currentPattern?.mermaidCode])
+  }, [currentPattern?.id, currentPattern?.mermaidCode, currentPattern])
 
   const getDefaultScenario = (patternId: string | undefined) => {
     switch (patternId) {
@@ -351,7 +352,7 @@ export function PatternWorkbench() {
   const [isAssigningTasks, setIsAssigningTasks] = useState(false)
   const [assignmentPhase, setAssignmentPhase] = useState<'idle' | 'fork' | 'write' | 'agent' | 'done'>('idle')
   const [workflowMode, setWorkflowMode] = useState<'breakdown' | 'oneshot'>('breakdown')
-  const [assignmentResponse, setAssignmentResponse] = useState<any>(null)
+  const [assignmentResponse, setAssignmentResponse] = useState<Record<string, unknown> | null>(null)
   const [banner, setBanner] = useState<{ repoUrl?: string; sessionUrl?: string; agent?: string } | null>(null)
   const responseRef = useRef<HTMLDivElement | null>(null)
   const [progressLog, setProgressLog] = useState<string[]>([])
@@ -404,7 +405,7 @@ export function PatternWorkbench() {
   const resumeAfterManualFork = async () => {
     if (!apiKey) return
     const jobId = (window.crypto && 'randomUUID' in crypto)
-      ? (crypto as any).randomUUID()
+      ? (crypto as Crypto).randomUUID()
       : Math.random().toString(36).slice(2)
     setIsAssigningTasks(true)
     setTimedOut(false)
@@ -416,7 +417,9 @@ export function PatternWorkbench() {
       es.addEventListener('write-agents', () => setAssignmentPhase('write'))
       es.addEventListener('agent-start', () => setAssignmentPhase('agent'))
       es.addEventListener('done', () => { setAssignmentPhase('done'); es.close() })
-    } catch {}
+    } catch {
+      // Ignore errors during EventSource setup
+    }
     const mappedCustomization = mapPatternToCustomizationRequest()
     const payload = {
       agent_id: 'devin',
@@ -493,14 +496,16 @@ export function PatternWorkbench() {
       es.addEventListener('copy-ok', () => { setProgressLog(prev => [...prev, 'Copy completed']); mark(); bump(70) })
       es.addEventListener('copy-progress', (e: MessageEvent) => {
         try {
-          const data = JSON.parse((e as any).data)
+          const data = JSON.parse((e as MessageEvent).data)
           const { copied, total } = data || {}
           if (copied) {
             setProgressLog(prev => [...prev, `Copied ${copied}${total ? ` / ${total}` : ''} files…`])
             if (total) setProgressPercent(Math.max(70, Math.min(90, Math.round((copied / total) * 90))))
             mark()
           }
-        } catch {}
+        } catch {
+          // Ignore errors during progress updates
+        }
       })
       es.addEventListener('write-agents', () => { setAssignmentPhase('write'); bump(85); mark() })
       es.addEventListener('agent-start', () => { setAssignmentPhase('agent'); bump(90); mark() })
@@ -510,7 +515,9 @@ export function PatternWorkbench() {
         if (!lastProgressAt) return
         if (Date.now() - (lastProgressAt || 0) > 60000 && !timedOut) {
           setTimedOut(true)
-          try { es.close() } catch {}
+          try { es.close() } catch {
+            // Ignore errors during cleanup
+          }
           window.clearInterval(interval)
         }
       }, 5000)
@@ -567,7 +574,9 @@ export function PatternWorkbench() {
                 try {
                   await navigator.clipboard.writeText(copyPayload)
                   toast({ title: 'Links copied' })
-                } catch {}
+                } catch {
+                  // Ignore clipboard errors
+                }
               }}
             >
               Copy Links
@@ -605,7 +614,7 @@ export function PatternWorkbench() {
               View details
             </ToastAction>
           ),
-          variant: 'destructive' as any,
+          variant: 'destructive' as "destructive",
         })
       }
     } catch (error) {
@@ -626,7 +635,7 @@ export function PatternWorkbench() {
             View details
           </ToastAction>
         ),
-        variant: 'destructive' as any,
+        variant: 'destructive' as "destructive",
       })
     } finally {
       setIsAssigningTasks(false)
@@ -747,10 +756,10 @@ export function PatternWorkbench() {
                         if (data.ok) {
                           toast({ title: `GitHub token OK for ${data.login}`, description: `Scopes: ${(data.scopes || []).join(', ') || 'none'}` })
                         } else {
-                          toast({ title: 'Token check failed', description: data.error || String(data.status), variant: 'destructive' as any })
+                          toast({ title: 'Token check failed', description: data.error || String(data.status), variant: 'destructive' as "destructive" })
                         }
-                      } catch (e: any) {
-                        toast({ title: 'Token check error', description: String(e), variant: 'destructive' as any })
+                      } catch (e: unknown) {
+                        toast({ title: 'Token check error', description: String(e), variant: 'destructive' as "destructive" })
                       }
                     }}
                   >
@@ -1003,45 +1012,45 @@ export function PatternWorkbench() {
                         {assignmentResponse.status === 'success' ? 'Success' : 
                          assignmentResponse.status === 'partial_success' ? 'Partial Success' : 'Error'}
                       </span>
-                      {assignmentResponse.agent && (
+                      {(assignmentResponse as Record<string, unknown>).agent ? (
                         <span className="ml-2 text-figma-text-secondary text-sm">
-                          Agent: {assignmentResponse.agent}
+                          Agent: {String((assignmentResponse as Record<string, unknown>).agent)}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                     <p className="text-figma-text-primary text-sm leading-relaxed">
-                      {assignmentResponse.message}
+                      {String((assignmentResponse as Record<string, unknown>).message)}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-3">
-                      {assignmentResponse.repository_url && (
+                      {(assignmentResponse as Record<string, unknown>).repository_url ? (
                         <a
-                          href={assignmentResponse.repository_url}
+                          href={String((assignmentResponse as Record<string, unknown>).repository_url)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm underline text-figma-text-secondary hover:text-white"
                         >
                           Open GitHub Repository
                         </a>
-                      )}
-                      {(assignmentResponse.session_url || assignmentResponse.session_id) && (
+                      ) : null}
+                      {((assignmentResponse as Record<string, unknown>).session_url || (assignmentResponse as Record<string, unknown>).session_id) ? (
                         <a
-                          href={assignmentResponse.session_url || `https://app.devin.ai/sessions/${assignmentResponse.session_id}`}
+                          href={String((assignmentResponse as Record<string, unknown>).session_url) || `https://app.devin.ai/sessions/${String((assignmentResponse as Record<string, unknown>).session_id)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm underline text-figma-text-secondary hover:text-white"
                         >
                           Open Devin Session
                         </a>
-                      )}
+                      ) : null}
                     </div>
-                    {assignmentResponse.result && (
+                    {(assignmentResponse as Record<string, unknown>).result ? (
                       <div className="mt-3 p-3 bg-figma-dark-gray rounded border border-figma-light-gray">
                         <p className="text-figma-text-secondary text-xs mb-1">Response Details:</p>
                         <pre className="text-figma-text-primary text-xs overflow-x-auto">
-                          {JSON.stringify(assignmentResponse.result, null, 2)}
+                          {JSON.stringify((assignmentResponse as Record<string, unknown>).result, null, 2)}
                         </pre>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
@@ -1078,11 +1087,11 @@ export function PatternWorkbench() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="owner" className="text-white">Your GitHub owner/org</Label>
-                      <Input id="owner" value={(customization as any).owner || ''} onChange={(e) => setCustomization(prev => ({ ...(prev as any), owner: e.target.value }))} placeholder={manualForkInfo?.suggested_owner || ''} />
+                      <Input id="owner" value={(customization as Record<string, unknown>).owner as string || ''} onChange={(e) => setCustomization(prev => ({ ...prev, owner: e.target.value }))} placeholder={manualForkInfo?.suggested_owner || ''} />
                     </div>
                     <div>
                       <Label htmlFor="repo" className="text-white">Repo name</Label>
-                      <Input id="repo" value={(customization as any).repo || ''} onChange={(e) => setCustomization(prev => ({ ...(prev as any), repo: e.target.value }))} placeholder={manualForkInfo?.suggested_repo || ''} />
+                      <Input id="repo" value={(customization as Record<string, unknown>).repo as string || ''} onChange={(e) => setCustomization(prev => ({ ...prev, repo: e.target.value }))} placeholder={manualForkInfo?.suggested_repo || ''} />
                     </div>
                   </div>
                   <div className="flex gap-2">

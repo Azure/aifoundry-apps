@@ -5,7 +5,7 @@ export function Footer() {
   const [starCount, setStarCount] = useState<number | null>(null)
 
   useEffect(() => {
-    const shouldFetch = (import.meta as any).env.VITE_SHOW_STAR_COUNT === 'true'
+    const shouldFetch = import.meta.env.VITE_SHOW_STAR_COUNT === 'true'
     if (!shouldFetch) return
     const fetchStarCount = async () => {
       try {

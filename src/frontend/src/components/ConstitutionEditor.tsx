@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 import { Button } from './ui/button'
 import { Label } from './ui/label'
@@ -10,6 +10,7 @@ interface ConstitutionEditorProps {
   isOpen: boolean
   onClose: () => void
   specId?: string
+  initialConstitution?: string
 }
 
 interface ConstitutionalArticle {
@@ -27,19 +28,13 @@ interface ConstitutionalData {
   integration_first: ConstitutionalArticle
 }
 
-export function ConstitutionEditor({ isOpen, onClose, specId }: ConstitutionEditorProps) {
-  const [constitution, setConstitution] = useState('')
+export function ConstitutionEditor({ isOpen, onClose, specId, initialConstitution }: ConstitutionEditorProps) {
+  const [constitution, setConstitution] = useState(initialConstitution || '')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchConstitution()
-    }
-  }, [isOpen])
-
-  const fetchConstitution = async () => {
+  const fetchConstitution = useCallback(async () => {
     setLoading(true)
     try {
       // Fetch the current constitutional articles
@@ -60,17 +55,27 @@ export function ConstitutionEditor({ isOpen, onClose, specId }: ConstitutionEdit
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiUrl])
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialConstitution) {
+        setConstitution(initialConstitution)
+      } else {
+        fetchConstitution()
+      }
+    }
+  }, [isOpen, initialConstitution, fetchConstitution])
 
   const generateMarkdownFromArticles = (data: ConstitutionalData): string => {
     let markdown = '# Constitutional Framework\n\n'
     markdown += 'This document defines the constitutional principles that govern spec-driven development.\n\n'
 
-    Object.entries(data).forEach(([key, article]) => {
+    Object.entries(data).forEach(([, article]) => {
       markdown += `## ${article.title}\n\n`
       markdown += `${article.description}\n\n`
       markdown += '**Checks:**\n'
-      article.checks.forEach(check => {
+      article.checks.forEach((check: string) => {
         markdown += `- ${check}\n`
       })
       markdown += '\n'
@@ -214,7 +219,7 @@ When amending this constitution, ensure all dependent documents are updated:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] bg-figma-medium-gray border-figma-light-gray">
+      <DialogContent className="max-w-4xl max-h-[90vh] bg-figma-medium-gray border-figma-light-gray [&>button]:text-white [&>button]:hover:text-gray-200 [&>button]:hover:bg-gray-700/50">
         <DialogHeader>
           <DialogTitle className="text-figma-text-primary flex items-center gap-2">
             <span>⚖️</span>
@@ -256,7 +261,7 @@ When amending this constitution, ensure all dependent documents are updated:
             <Button
               variant="outline"
               onClick={onClose}
-              className="border-figma-light-gray text-figma-text-primary hover:bg-figma-light-gray/20 hover:text-white"
+              className="border-gray-600 text-white bg-transparent hover:bg-gray-700/50 hover:text-white hover:border-gray-500"
             >
               <X className="h-4 w-4 mr-2" />
               Cancel

@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  frontend-checks:
+    name: Frontend Checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/frontend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: src/frontend/package-lock.json
+      
+      - name: Install pnpm
+        run: npm install -g pnpm
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Run type checking
+        run: pnpm run type-check
+        continue-on-error: true
+      
+      - name: Run linting
+        run: pnpm run lint
+        continue-on-error: true
+      
+      - name: Build frontend
+        run: pnpm run build
+
+  backend-checks:
+    name: Backend Checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/backend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install UV
+        run: pip install uv
+      
+      - name: Install dependencies
+        run: uv sync
+      
+      - name: Run Python linting (if available)
+        run: |
+          if uv run which ruff >/dev/null 2>&1; then
+            uv run ruff check .
+          else
+            echo "Ruff not available, skipping Python linting"
+          fi
+        continue-on-error: true
+      
+      - name: Run type checking (if available)
+        run: |
+          if uv run which mypy >/dev/null 2>&1; then
+            uv run mypy .
+          else
+            echo "MyPy not available, skipping type checking"
+          fi
+        continue-on-error: true
+      
+      - name: Test backend startup
+        run: |
+          uv run python -c "
+          try:
+              from app.main import app
+              print('Backend imports successfully')
+          except Exception as e:
+              print(f'Backend import failed: {e}')
+              exit(1)
+          "
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [frontend-checks, backend-checks]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd src/frontend && npm install -g pnpm && pnpm install
+          cd ../backend && pip install uv && uv sync
+      
+      - name: Build frontend
+        run: cd src/frontend && pnpm run build
+      
+      - name: Test backend startup
+        run: cd src/backend && uv run python -c "from app.main import app; print('Integration test passed')"

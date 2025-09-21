@@ -79,8 +79,49 @@ src/backend/
 
 The application supports the following environment variables:
 
+### Required Environment Variables
+- `HF_TOKEN` - HuggingFace API token for dataset access (required for post-training features)
+- `AZURE_OPENAI_KEY` - Azure OpenAI API key for AI model access
+- `AZURE_OPENAI_ENDPOINT` - Azure OpenAI endpoint URL
+
+### Optional Environment Variables
+- `GITHUB_CLIENT_ID` - GitHub OAuth client ID for authentication
+- `GITHUB_CLIENT_SECRET` - GitHub OAuth client secret
+- `GITHUB_REDIRECT_URI` - GitHub OAuth redirect URI
+- `GITHUB_TOKEN` - GitHub personal access token
+- `GITHUB_APP_ID` - GitHub App ID for advanced features
+- `GITHUB_PRIVATE_KEY_PATH` - Path to GitHub App private key
+- `DEVIN_API_BASE_URL` - Devin AI API base URL (default: https://api.devin.ai)
+- `COSMOS_CONNECTION_STRING` - Azure Cosmos DB connection string
+- `COSMOS_DATABASE_ID` - Azure Cosmos DB database ID (default: aifoundry)
+- `API_VERSION` - Azure OpenAI API version (default: preview)
+- `MODEL_NAME` - Azure OpenAI model name (default: gpt-5-nano)
 - `PYTHONPATH` - Set to `/app` for proper module resolution
 - `PORT` - Server port (default: 8000)
+
+### Setting Up Environment Variables
+
+Create a `.env` file in the backend directory with the required variables:
+
+```bash
+# Required for HuggingFace dataset access
+HF_TOKEN=your_huggingface_api_token
+
+# Required for Azure OpenAI
+AZURE_OPENAI_KEY=your_azure_openai_key
+AZURE_OPENAI_ENDPOINT=https://your-resource.cognitiveservices.azure.com/
+
+# Optional GitHub integration
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+```
+
+### Getting a HuggingFace API Token
+
+1. Go to [HuggingFace Settings](https://huggingface.co/settings/tokens)
+2. Click "New token"
+3. Select "Read" access (sufficient for dataset browsing)
+4. Copy the generated token and add it to your `.env` file
 
 ## Testing
 
